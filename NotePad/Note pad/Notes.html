@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #cf9aff, #95c0ff);
+            color: #dccbcb;
+        }
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(135deg, #cf9aff, #95c0ff);
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+        .sidebar img {
+            display: block;
+            margin-bottom: 10px;
+            width: 50px;
+        }
+        .sidebar h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .sidebar button, .sidebar input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            background: linear-gradient(135deg, #7a49a4, #a27ebb);
+            border: none;
+            color: #f5e5e5;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .sidebar input {
+            background: #7a49a4d;
+            color: #f5e5e5;
+        }
+        .sidebar input::placeholder {
+            color: #f5e5e5;
+        }
+        .main {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .input-box {
+            width: 100%;
+            max-width: 600px;
+            height: 60vh;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #c0b2d474;
+            color: #f5e5e5;
+            margin-bottom: 10px;
+        }
+        .note {
+            background-color: #746980a2;
+            padding: 20px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .note:hover {
+            background-color: #8b6d9a;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .note-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .note-date-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #fff; /* Date color set to white */
+            margin-bottom: 10px;
+        }
+        .delete-icon {
+            width: 20px;
+            cursor: pointer;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #a26fb57d;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        .popup input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #f5e5e5;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .popup button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #7626bca4, #a27ebb7b);
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .note-content {
+            color: transparent;
+            overflow: hidden;
+            transition: color 0.3s;
+        }
+        .note-content.show-content {
+            color: #f5e5e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <img src="notes.png" alt="Notes Icon">
+        <h2>Sticky Notes</h2>
+        <button onclick="newNote()">New</button>
+        <button onclick="showSavePopup()">Save</button>
+        <input type="text" placeholder="Search notes..." id="search" onkeyup="searchNotes()">
+        <div id="notesList">
+            <!-- List of notes will appear here -->
+        </div>
+    </div>
+    <div class="main">
+        <div class="input-box" contenteditable="true" id="noteContent">
+            Notes here...
+        </div>
+    </div>
+    <div class="popup" id="savePopup">
+        <input type="text" id="noteTitle" placeholder="Enter note title">
+        <button onclick="saveNote()">Save</button>
+    </div>
+    <script>
+        let notes = [];
+
+        function newNote() {
+            document.getElementById('noteContent').innerHTML = 'Notes here...';
+        }
+
+        function showSavePopup() {
+            document.getElementById('savePopup').style.display = 'block';
+            document.getElementById('noteTitle').focus(); // Focus on input field when popup is shown
+        }
+
+        function hideSavePopup() {
+            document.getElementById('savePopup').style.display = 'none';
+            document.getElementById('noteTitle').value = '';
+        }
+
+        function saveNote() {
+            const noteTitle = document.getElementById('noteTitle').value;
+            const noteContent = document.getElementById('noteContent').innerHTML;
+            const noteDate = new Date().toLocaleString();
+
+            if (noteTitle.trim() === '') {
+                alert('Please enter a note title');
+                return;
+            }
+
+            const note = {
+                title: noteTitle,
+                content: noteContent,
+                date: noteDate
+            };
+
+            notes.push(note);
+            updateNotesList();
+            hideSavePopup();
+            newNote();
+        }
+
+        function updateNotesList() {
+            const notesList = document.getElementById('notesList');
+            notesList.innerHTML = '';
+
+            notes.forEach((note, index) => {
+                const newNote = document.createElement('div');
+                newNote.className = 'note';
+                newNote.innerHTML = `<div class="note-header">${note.title}</div>
+                                     <div class="note-date-container">
+                                         <span class="note-date">${note.date}</span>
+                                         <img src="delete.png" alt="Delete Icon" class="delete-icon" onclick="deleteNote(${index})">
+                                     </div>
+                                     <div class="note-content">${note.content}</div>`;
+                newNote.onclick = () => openNoteContent(index);
+                notesList.appendChild(newNote);
+            });
+        }
+
+        function openNoteContent(index) {
+            const noteContentElement = document.querySelectorAll('.note-content')[index];
+            noteContentElement.classList.toggle('show-content');
+        }
+
+        function deleteNote(index) {
+            notes.splice(index, 1);
+            updateNotesList();
+        }
+
+        function searchNotes() {
+            const searchValue = document.getElementById('search').value.toLowerCase();
+            const notesList = document.getElementById('notesList');
+
+            notesList.innerHTML = '';
+
+            notes.forEach((note, index) => {
+                if (note.title.toLowerCase().includes(searchValue)) {
+                    const newNote = document.createElement('div');
+                    newNote.className = 'note';
+                    newNote.innerHTML = `<div class="note-header">${note.title}</div>
+                                         <div class="note-date-container">
+                                             <span class="note-date">${note.date}</span>
+                                             <img src="delete.png" alt="Delete Icon" class="delete-icon" onclick="deleteNote(${index})">
+                                         </div>
+                                         <div class="note-content">${note.content}</div>`;
+                    newNote.onclick = () => openNoteContent(index);
+                    notesList.appendChild(newNote);
+                }
+            });
+        }
+
+        // Close popup when clicking outside of it
+        window.onclick = function(event) {
+            const popup = document.getElementById('savePopup');
+            if (event.target === popup) {
+                hideSavePopup();
+            }
+        }
+    </script>
+</body>
+</html>
